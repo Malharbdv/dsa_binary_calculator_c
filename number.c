@@ -161,11 +161,12 @@ Number convert_to_number(char *digits) {
 
 
 void traverse(List list) {
-    if (!list) {
+    if (list == NULL) {
         printf("0");
         return;
     }
-    Node *temp = list;
+
+    List temp = list;
     
     while (temp) {
         printf("%c", temp->val);
@@ -188,6 +189,18 @@ List copy_list(List list) {
     }
     return copied_list;
 }
+
+
+Number copy_number(Number number) {
+    Number copied_number;
+    init_number(&copied_number);
+
+    copied_number.integer = copy_list(number.integer);
+    copied_number.fraction = copy_list(number.fraction);
+    copied_number.sign = number.sign;
+
+    return copied_number;
+} 
 
 
 void print_list(List list) {
@@ -247,7 +260,13 @@ void print_number(Number number) {
 }
 
 
-int compare(Number number1, Number number2) {
+/*  Returns 0 if number1 > number2;
+    Returns 1 if number1 < number2;
+    Returns 2 if number1 = number2; */
+int compare_numbers(Number number1, Number number2) {
+    trim_zeroes(&number1);
+    trim_zeroes(&number2);
+    
     List integer1 = number1.integer;
     List integer2 = number2.integer;
 
@@ -291,6 +310,61 @@ int compare(Number number1, Number number2) {
 }
 
 
+/*  Returns 0 if list1 > list2;
+    Returns 1 if list1 < list2;
+    Returns 2 if list1 = list2; */
+int compare_integers(List list1, List list2) {
+    List integer1 = list1;
+    List integer2 = list2;
+
+    while (integer1 && integer2) {
+        integer1 = integer1->next;
+        integer2 = integer2->next;
+    }
+
+    if (integer2 == NULL) return 0;
+    else if (integer1 == NULL) return 1;
+
+    else {
+        integer1 = list1;
+        integer2 = list2;
+
+        while (integer1 && integer2) {
+            if (integer1->val > integer2->val) return 0;
+            else if (integer1->val < integer2->val) return 1;
+            else {
+                integer1 = integer1->next;
+                integer2 = integer2->next;
+            } 
+        }
+        return 2;
+    }
+    return -1;
+}
+
+
+/*  Returns 0 if list1 > list2;
+    Returns 1 if list1 < list2;
+    Returns 2 if list1 = list2; */
+int compare_fractions(List list1, List list2) {
+    List fraction1 = list1;
+    List fraction2 = list2;
+
+    while (fraction1 && fraction2) {
+        if (fraction1->val > fraction2->val) return 0;
+        else if (fraction1->val < fraction2->val) return 1;
+        else {
+            fraction1 = fraction1->next;
+            fraction2 = fraction2->next;
+        }
+    }
+    
+    if (fraction1) return 0;
+    else if (fraction2) return 1;
+    return 2;
+}
+
+
 void trim_zeroes(Number *number_pointer) {
     List _integer = number_pointer->integer;
     List _fraction = number_pointer->fraction;
@@ -320,17 +394,56 @@ void trim_zeroes(Number *number_pointer) {
 }
 
 
-int main() {
-    char *digits1 = "000123457.0000";
-    Number number1 = convert_to_number(digits1);\
-    print_number(number1);
-    printf("\n");
-    print_list(number1.integer);
-    print_list(number1.fraction);
+void trim_zeroes_integer(List *list_pointer) {
+    List _integer = *list_pointer;
 
-    trim_zeroes(&number1);
-    print_number(number1);
-    printf("\n");
+    while (_integer && _integer->val == '0') {
+        List temp = _integer;
+        _integer = _integer->next;
+        free(temp);
+    }
+    
+    if (!_integer) _integer = zero_list();
+    else _integer->prev = NULL;
 
-    return 0;
+    *list_pointer = _integer;
 }
+
+
+void append_list(List *destination, List source) {
+    if (source == NULL) return;
+    
+    if (*destination == NULL) {
+        *destination = source;
+        return;
+    }
+
+    List temp = *destination;
+    while (temp->next) temp = temp->next;
+
+    temp->next = copy_list(source);
+    temp->next->prev = temp;
+    return;
+}
+
+
+int list_length(List list){
+    int length = 0;
+    List temp = list;
+
+    while (temp) {
+        length += 1; 
+        temp = temp->next;
+    }
+    return length;
+}
+
+
+// int main() {
+//     char *digits1 = "123"; char *digits2 = "";
+//     Number number1 = convert_to_number(digits1); print_number(number1); printf("\n");
+//     Number number2 = convert_to_number(digits2); print_number(number2); printf("\n");
+//     List list1 = convert_to_list(digits1);
+//     printf("%d\n", compare_numbers(number1, zero_number()));
+//     return 0;
+// }

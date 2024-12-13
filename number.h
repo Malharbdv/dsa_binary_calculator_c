@@ -15,18 +15,24 @@ typedef struct Number {
     char sign;
 } Number;
 
-void init_list(List *list_pointer);
-void init_number(Number *number_pointer);
-void append(List *list_pointer, char d);
-void insertbig(List *list_pointer, char d);
-List convert_to_list(char *number);
-Number convert_to_number(char *digits);
-void reverse(List *list_pointer);
-List copy_list(List list);
-void traverse(List list);
-void print_list(List list);
-void print_number(Number number);
-int compare(Number number1, Number number2);
-void trim_zeroes(Number *number_pointer);
+void init_list(List *);
+void init_number(Number *);
+void append(List *, char);
+void insertbeg(List *, char);
+List convert_to_list(char *);
+Number convert_to_number(char *);
+void reverse(List *);
+List copy_list(List);
+Number copy_number(Number);
+void traverse(List);
+void print_list(List);
+void print_number(Number);
+int compare_numbers(Number, Number);
+int compare_integers(List, List);
+int compare_fractions(List, List);
+void trim_zeroes(Number *);
+void trim_zeroes_integer(List *);
+void append_list(List*, List);
+int list_length(List);
 
 #endif

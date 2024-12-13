@@ -1,4 +1,4 @@
-# dsa_binary_calculator_c
+# Binary Calculator
 
 The strcture of the Number struct and how its accessing works can be deduced from the following represntation of the number '123.456' as follows:
 

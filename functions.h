@@ -3,10 +3,17 @@
 
 #include "number.h"
 
-List integer_addition(List list1, List list2, int flag);
-List fraction_addition(List list1, List list2, int *flag);
-Number addtion(Number number1, Number number2);
+List integer_addition(List, List, int);
+List fraction_addition(List, List, int *);
+Number addition(Number, Number);
 
-List integer_subtraction(List list1, List list2, int flat);
+List integer_subtraction(List, List, int);
+List fraction_subtraction(List, List, int *);
+Number subtraction(Number, Number);
+
+List list_multiplication(List, List);
+Number multiplication(Number, Number);
+
+List list_division(List, List);
 
 #endif
