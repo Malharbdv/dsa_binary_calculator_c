@@ -98,6 +98,9 @@ List fraction_addition(List list1, List list2, int *carry_forward) {
 
 
 Number addition(Number number1, Number number2) {
+    if (number1.sign == '+' && number2.sign == '-') return subtraction(number1, negation(number2));
+    else if (number1.sign == '-' && number2.sign == '+') return negation(subtraction(negation(number1), number2));
+
     Number sum;
     init_number(&sum);
 
@@ -154,7 +157,7 @@ List integer_subtraction(List list1, List list2, int carry_forward) {
         insertbeg(&difference, (char) (subtract + '0'));
         p = p->prev;
     }
-
+    trim_zeroes_integer(&difference);
     return difference;
 }
 
@@ -203,6 +206,7 @@ List fraction_subtraction(List list1, List list2, int *carry_forward) {
         *carry_forward = 1;
     }
 
+    trim_zeroes_integer(&difference);
     return difference;
 }
 
@@ -210,6 +214,9 @@ List fraction_subtraction(List list1, List list2, int *carry_forward) {
 Number subtraction(Number number1, Number number2) {
     Number difference; init_number(&difference);
 
+    if (number1.sign == '+' && number2.sign == '-') return addition(number1, negation(number2));
+    else if (number1.sign == '-' && number2.sign == '+') return negation(addition(negation(number1), number2));
+    
     int carry_forward = 0;
     switch (compare_numbers(number1, number2)) {
         case 0:
@@ -232,6 +239,7 @@ Number subtraction(Number number1, Number number2) {
             break;
     }
 
+    trim_zeroes(&difference);
     return difference;
 }
 
@@ -266,12 +274,6 @@ List list_multiplication(List list1, List list2) {
         possible_products[i] = temp;
     }
 
-    // for (int i = 0; i < 10; i++) {
-    //     printf("possible_products[%d] = ", i);
-    //     traverse(possible_products[i]);
-    //     printf("\n"); 
-    // }
-
     List q = list2;
     while (q->next) q = q->next;
 
@@ -301,29 +303,27 @@ Number multiplication(Number number1, Number number2) {
     append_list(&complete_list1, number1.integer);
     append_list(&complete_list1, number1.fraction);
     int first_decimal = list_length(number1.fraction);
-    // traverse(complete_list1); printf(" = complete_list1\n");
 
     List complete_list2; init_list(&complete_list2);
     append_list(&complete_list2, number2.integer);
     append_list(&complete_list2, number2.fraction);
     int second_decimal = list_length(number2.fraction);
-    // traverse(complete_list2); printf(" = complete_list2\n");
 
     int total_decimal = first_decimal + second_decimal;
 
     List output = list_multiplication(complete_list1, complete_list2);
     Number product; init_number(&product);
-    // traverse(output); printf(" = output\n");
 
     List temp = output;
-    // traverse(temp);
-    // printf(" = temp in multiplication\n");
     if (temp == NULL) return zero_number();
     while (temp->next) temp = temp->next;
 
+    int temp_flag = 0;
     for (int i = 0; i < total_decimal; i++) {
-        if (temp->prev == NULL) 
+        if (temp->prev == NULL) {
             insertbeg(&temp, '0');
+            temp_flag = 1;
+        }
         else
             temp = temp->prev;
     }
@@ -332,14 +332,22 @@ Number multiplication(Number number1, Number number2) {
     product.fraction->prev = NULL;
 
     temp->next = NULL;
-    product.integer = temp;
+    if (temp_flag) product.integer = temp;
+    else product.integer = output;
 
     trim_zeroes(&product);
+
+    if (number1.sign == '+' && number2.sign == '+') product.sign = '+';
+    else if (number1.sign == '-' && number2.sign == '-') product.sign = '+';
+    else if (number1.sign == '-' && number2.sign == '+') product.sign = '-';
+    else if (number1.sign == '+' && number2.sign == '-') product.sign = '-';
+
     return product;
 }
 
 
-List list_division(List list1, List list2) {
+// Divides list1 by list2 
+List list_division(List list1, List list2, int *cap_forward) {
     if (list1 == NULL || list2 == NULL) return zero_list();
 
     trim_zeroes_integer(&list1); trim_zeroes_integer(&list2);
@@ -374,51 +382,132 @@ List list_division(List list1, List list2) {
         possible_products[i] = temp;
     }
 
-    for (int i = 0; i < 10; i++) {
-        printf("possible_products[%d] = ", i);
-        traverse(possible_products[i]);
-        printf("\n"); 
-    }
-
     int cap = 0;
+    int running = 1;
     List p = list1;
     List dividend; init_list(&dividend);
     List divisor = copy_list(list2);
 
-    while (p != NULL) {
-        traverse(p); printf(" = p\n");
-        while (compare_integers(dividend, divisor) == 1) {
-            append(&quotient, '0'); 
+    while (running) {
+        if (p != NULL) {
             append(&dividend, p->val);
-            traverse(dividend); printf(" = dividend\n");
-
             p = p->next;
+        }
+        else {
+            append(&dividend, '0');
+            cap += 1;
+        }
+        if (cap >= MAX_CAP) running = 0;
+
+        while (compare_integers(dividend, divisor) == 1 && cap <= 10) {
+            append(&quotient, '0');
+            if (p != NULL) {
+                append(&dividend, p->val);
+                p = p->next;
+            }
+            else {
+                append(&dividend, '0');
+                cap += 1;
+            }
+            if (cap >= MAX_CAP) {
+                running = 0; 
+            }
         }
 
         int i = 0;
-        while (compare_integers(possible_products[i], dividend) == 1 && i < 10) i += 1;
-        printf("%d = i\n", i);
-        append(&quotient, (char)(i - 1 + '0'));
-        traverse(possible_products[i-1]); printf(" = possible_products[i-1]");
-        traverse(dividend); printf(" = dividend\n");
+        List temp = possible_products[0];
 
-        dividend = integer_subtraction(dividend, possible_products[i - 1], 0);
-        // traverse(dividend); printf(" = dividend\n");
-        // traverse(quotient); printf(" = quotient\n");
+        while (compare_integers(temp, dividend) == 1 && i < 10) {
+            i += 1;
+            temp = possible_products[i];
+        }
+
+        temp = copy_list(possible_products[i-1]);
+        dividend = integer_subtraction(dividend, temp, 0);
+        if ((compare_integers(dividend, zero_list()) == 2) && p == NULL) running = 0; 
+        append(&quotient, (char)(i - 1 + '0'));
+
     }
 
-    trim_zeroes_integer(&quotient);
+    for (int i = 0; i < 10; i++) {
+        free_list(&possible_products[i]);
+    }
+    free(possible_products);
+    
+    *cap_forward = cap;
     return quotient;
 }
 
 
-int main() {
-    List n1, n2;
-    char *num1 = "56415320", *num2 = "923543841238";
-    n1 = convert_to_list(num1); traverse(n1); printf("\n");
-    n2 = convert_to_list(num2); traverse(n2); printf("\n");
+// Divides number1 by number2
+Number division(Number number1, Number number2) {
+    List complete_list1; init_list(&complete_list1);
+    append_list(&complete_list1, number1.integer);
+    append_list(&complete_list1, number1.fraction);
+    int first_decimal = list_length(number1.fraction);
 
-    List temp = list_division(n2, n1);
-    traverse(temp);
-    printf("\n");
+    List complete_list2; init_list(&complete_list2);
+    append_list(&complete_list2, number2.integer);
+    append_list(&complete_list2, number2.fraction);
+    int second_decimal = list_length(number2.fraction);
+
+    int cap = 0;
+    List output = list_division(complete_list1, complete_list2, &cap);
+
+    int total_decimal = first_decimal - second_decimal + cap;
+    Number quotient; init_number(&quotient);
+
+    List temp = output;
+    if (temp == NULL) return zero_number();
+    while (temp->next) temp = temp->next;
+
+    int temp_flag = 0;
+
+    for (int i = 0; i < total_decimal; i++) {
+        if (temp->prev == NULL) { 
+            insertbeg(&temp, '0');
+            temp_flag = 1;
+        }
+        else
+            temp = temp->prev;
+    }
+
+    quotient.fraction = temp->next;
+    quotient.fraction->prev = NULL;
+
+    temp->next = NULL;
+    if (temp_flag) quotient.integer = temp;
+    else quotient.integer = output;
+
+    if (number1.sign == '+' && number2.sign == '+') quotient.sign = '+';
+    if (number1.sign == '-' && number2.sign == '-') quotient.sign = '+';
+    if (number1.sign == '-' && number2.sign == '+') quotient.sign = '-';
+    if (number1.sign == '+' && number2.sign == '-') quotient.sign = '-';
+
+    trim_zeroes(&quotient);
+    return quotient;
 }
+
+
+Number negation(Number number) {
+    Number negative = copy_number(number);
+    
+    if (negative.sign == '+') negative.sign = '-';
+    else if (negative.sign == '-') negative.sign = '+';
+
+    return negative;
+}
+
+
+// int main() {
+//     Number n1, n2;
+//     char *num1 = "-68432123543845.131", *num2 = "813556315.13521";
+//     char *digits = "-33.1653485842-56344566843.254384";
+    
+//     n1 = convert_to_number(num1); n2 = convert_to_number(num2);
+
+//     Number result = subtraction(n1, n2);
+//     print_number(result);
+//     printf("\n");
+//     return 0;
+// }
